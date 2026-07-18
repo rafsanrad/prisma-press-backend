@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { userContrller } from "./user.controller";
+import { userController } from "./user.controller";
 import { Role } from "../../../generated/prisma/enums";
 import { auth } from "../../middlewares/auth";
 
 const router = Router();
 
-router.post("/register", userContrller.registerUser);
+router.post("/register", userController.registerUser);
 
 router.get(
   "/me",
@@ -44,9 +44,9 @@ router.get(
   //     next();
   //   },
   auth(Role.ADMIN, Role.AUTHOR, Role.USER),
-  userContrller.getMyProfile,
+  userController.getMyProfile,
 );
 
-router.put("/my-profile",auth(Role.ADMIN, Role.AUTHOR, Role.USER),userContrller.updateMyProfile)
+router.put("/my-profile",auth(Role.ADMIN, Role.AUTHOR, Role.USER),userController.updateMyProfile)
 
 export const userRoutes = router;

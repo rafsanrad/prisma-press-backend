@@ -1,11 +1,10 @@
-import { prisma } from "../../lib/prisma";
+
 import httpStatus from "http-status";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import { userService } from "./user.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import config from "../../config";
-import { jwtUtils } from "../../utils/jwt";
+
 
 
 // const registerUser = async (req: Request, res: Response) => {
@@ -91,7 +90,7 @@ const updateMyProfile=catchAsync(async(req:Request,res:Response,next:NextFunctio
     })
 })
 
-export const userContrller = {
+export const userController = {
   registerUser,
   getMyProfile,
   updateMyProfile
