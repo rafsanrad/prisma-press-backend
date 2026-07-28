@@ -1,6 +1,12 @@
+import { title } from "node:process";
 import { CommentStatus, PostStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
-import { ICreatePostPayload, IUpdatePostPayload } from "./post.interface";
+import {
+  ICreatePostPayload,
+  IPostQuery,
+  IUpdatePostPayload,
+} from "./post.interface";
+import { PostWhereInput } from "../../../generated/prisma/models";
 
 const createPost = async (payload: ICreatePostPayload, userId: string) => {
   const result = await prisma.post.create({
@@ -12,8 +18,218 @@ const createPost = async (payload: ICreatePostPayload, userId: string) => {
   return result;
 };
 
-const getAllPosts = async () => {
+const getAllPosts = async (query: IPostQuery) => {
+  const limit = query.limit ? Number(query.limit) : 10;
+  const page = query.page ? Number(query.page) : 1;
+  const skip = (page - 1) * limit;
+  const sortBy = query.sortBy ? query.sortBy : "createdAt";
+  const sortOrder = query.sortOrder ? query.sortOrder : "desc";
+
+  const tags=query.tags?JSON.parse(query.tags as string):null
+  const tagsArray=Array.isArray(tags)?tags:[]
+//   console.log(tagsArray,"tags Array")
+
+  const andCondition: PostWhereInput[] = [];
+  if (query.searchTerm) {
+    andCondition.push({
+      OR: [
+        {
+          title: {
+            contains: "Ron",
+            mode: "insensitive",
+          },
+        },
+        {
+          content: {
+            contains: "Ron",
+            mode: "insensitive",
+          },
+        },
+      ],
+    });
+  }
+
+  if(query.title){
+    andCondition.push({
+        title:query.title
+    })
+  }
+
+  if(query.content){
+    andCondition.push({
+        content:query.content
+    })
+  }
+
+  if(query.authorId){
+    andCondition.push({
+        authorId:query.authorId
+    })
+  }
+
+  if(query.isFeatured){
+    andCondition.push({
+        isFeatured:Boolean(query.isFeatured)
+    })
+  }
+
+  if(query.tags){
+    andCondition.push({
+        tags:{
+            hasSome:tagsArray
+        }
+    })
+  }
+
+  if(query.status){
+    andCondition.push({
+        status:query.status
+    })
+  }
+
   const posts = await prisma.post.findMany({
+    //Filtering/Exact match without AND operator
+
+    // where:{
+    //     title:"My second post",
+    //     content:"Ronaldo"
+    // },
+
+    //Filtering/Exact match with AND operator
+    // where: {
+    //   AND: [
+    //     {
+    //       title: "My second post",
+    //     },
+    //     {
+    //       content: "Ronaldo",
+    //     },
+    //   ],
+    // },
+
+    //searching / partial match
+    // where:{
+    //     title:{
+    //         contains:"ronaldo",
+    //         mode:"insensitive"
+    //     },
+    //     //Not ideal for partial match
+    //     // content:{
+    //     //     contains:"Ronaldo"
+    //     // }
+    // }
+
+    //searching/partial search with or operator
+    // where:{
+    //     OR:[
+    //         {
+    //             title:{
+    //                 contains:"Ronaldo",
+    //                 mode:"insensitive"
+    //             }
+    //         },
+    //         {
+    //             content:{
+    //                 contains:"Ronaldo",
+    //                 mode:"insensitive"
+    //             }
+    //         }
+    //     ]
+    // },
+
+    //combining search(OR) and filtering(AND)
+
+    // where: {
+    //   //filtering and searching combined
+    //   AND: [
+    //     {
+    //       //searching
+    //       OR: [
+    //         {
+    //           title: {
+    //             contains: "Ron",
+    //             mode: "insensitive",
+    //           },
+    //         },
+    //         {
+    //           content: {
+    //             contains: "Ron",
+    //             mode: "insensitive",
+    //           },
+    //         },
+    //       ],
+    //     },
+    //     //filtering
+    //     {
+    //       title: "Ronaldo Nazario",
+    //     },
+    //     {
+    //       content: "Ronaldo",
+    //     },
+    //   ],
+    // },
+
+    //pagination with (limit or take) and (skip or page)
+
+    // take:1,
+    // skip:1,
+
+    //Formula for skip
+    // page=4,limit/take=1,skip=(page-1)*limit
+
+    //sorting in ascending or descending order on specifiq field
+
+    // orderBy:{
+    //     createdAt:"desc",
+    //     title:"asc",
+    //     content:"desc"
+    // },
+
+    //dynamic searching,filtering
+    // where: {
+    //   AND: [
+    //     query.searchTerm
+    //       ? {
+    //           OR: [
+    //             {
+    //               title: {
+    //                 contains: query.searchTerm,
+    //                 mode: "insensitive",
+    //               },
+    //             },
+    //             {
+    //               content: {
+    //                 contains: query.searchTerm,
+    //                 mode: "insensitive",
+    //               },
+    //             },
+    //           ],
+    //         }
+    //       : {},
+    //     //Title filtering
+    //     //     {
+    //     //         title:query.title
+    //     //     }
+    //     query.title ? { title: query.title } : {},
+
+    //     //content filtering
+    //     query.content ? { content: query.content } : {},
+    //   ],
+    // },
+
+    where: {
+      AND: andCondition,
+    },
+
+    //dynamic pagination and sorting
+    take: limit,
+    skip: skip,
+
+    orderBy: {
+      //sortby:sortOrder
+      [sortBy]: sortOrder,
+    },
+
     include: {
       author: {
         omit: {
@@ -261,7 +477,7 @@ const getPostsStats = async () => {
       totalComments,
       totalApprovedComments,
       totalRejectedComments,
-      totalPostViews:totalPostViewsAggregate._sum.views,
+      totalPostViews: totalPostViewsAggregate._sum.views,
     };
   });
 
