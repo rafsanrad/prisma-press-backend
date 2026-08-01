@@ -7,7 +7,6 @@ import { authRoutes } from "./modules/auth/auth.route";
 import { postRoutes } from "./modules/post/post.route";
 import { commentRoutes } from "./modules/comment/comment.route";
 import { notFound } from "./middlewares/notFound";
-import httpStatus from "http-status"
 import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 
 //created express application.
